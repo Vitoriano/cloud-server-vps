@@ -2,6 +2,8 @@ services:
   traefik:
     image: traefik:v3.3.7
     hostname: traefik
+    environment:
+      - DOCKER_API_VERSION=1.45
     command:
       # --- API desabilitada ---
       - --api=false
