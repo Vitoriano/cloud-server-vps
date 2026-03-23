@@ -1,0 +1,69 @@
+---
+description: Docker Swarm and Traefik v3 configuration standards
+globs: "**/docker-compose.yml,**/docker-compose.*.yml"
+alwaysApply: false
+---
+
+# Docker Swarm + Traefik v3.3.7
+
+This project runs on **Docker Swarm**. All service configurations must be Swarm-compatible.
+
+## Stack & Infrastructure
+
+- **Orchestrator**: Docker Swarm
+- **Reverse Proxy**: Traefik v3.3.7
+- **Public network**: `network_public` (overlay, external)
+- **Certificates**: Let's Encrypt via TLS Challenge
+
+## Mandatory Rules for docker-compose.yml
+
+### Swarm mode — DO NOT use
+
+- `container_name` (not supported in Swarm)
+- `restart` (use `deploy.restart_policy` instead)
+- `depends_on` (not supported in Swarm)
+- `build` (Swarm only accepts pre-built images)
+
+### Swarm mode — ALWAYS use
+
+- `deploy.mode`, `deploy.replicas` or `deploy.mode: global`
+- `deploy.restart_policy` with `condition`, `delay`, `max_attempts`, `window`
+- `deploy.resources` with `limits` and `reservations` for memory and CPU
+- `deploy.update_config` with `failure_action: rollback`
+- `deploy.rollback_config`
+- `deploy.placement.constraints` when needed
+
+### Traefik Labels
+
+Traefik labels must go under `deploy.labels`, NOT service-level `labels`:
+
+```yaml
+deploy:
+  labels:
+    - "traefik.enable=true"
+    - "traefik.http.routers.NAME.rule=Host(`sub.vitorianoernandes.dev`)"
+    - "traefik.http.routers.NAME.entrypoints=websecure"
+    - "traefik.http.routers.NAME.tls.certresolver=letsencrypt"
+    - "traefik.http.routers.NAME.middlewares=security-headers@file,rate-limit@file"
+    - "traefik.http.services.NAME.loadbalancer.server.port=PORT"
+```
+
+### Networks
+
+- Externally exposed services: `network_public` (external: true)
+- Internal service-to-service communication: create overlay network with `internal: true`
+
+### Security
+
+- Always pin image tags to a specific version (never `latest`)
+- Mount Docker socket as `:ro` when required
+- `healthcheck` is mandatory for every service
+- Log rotation with `json-file`, `max-size: 10m`, `max-file: 3`
+
+### Available Middlewares (defined in Traefik)
+
+| Reference | Purpose |
+|---|---|
+| `security-headers@file` | HSTS, XSS, Content-Type, Referrer-Policy |
+| `rate-limit@file` | 100 req/min, burst 200 |
+| `compress-response@file` | Gzip compression |
