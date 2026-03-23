@@ -1,0 +1,45 @@
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12
+      sniStrict: true
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+      curvePreferences:
+        - X25519
+        - CurveP256
+        - CurveP384
+
+http:
+  middlewares:
+    security-headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        frameDeny: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customFrameOptionsValue: "SAMEORIGIN"
+        referrerPolicy: "strict-origin-when-cross-origin"
+        permissionsPolicy: "camera=(), microphone=(), geolocation=(), payment=()"
+        customResponseHeaders:
+          X-Robots-Tag: "noindex, nofollow"
+          X-Powered-By: ""
+          Server: ""
+
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 200
+        period: 1m
+
+    compress-response:
+      compress:
+        excludedContentTypes:
+          - text/event-stream
