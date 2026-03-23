@@ -26,9 +26,6 @@ services:
       - --entrypoints.websecure.http.tls=true
       - --entrypoints.websecure.http.tls.certResolver=letsencrypt
 
-      # --- TLS mínimo v1.2, ciphers seguros ---
-      - --entrypoints.websecure.http.tls.options=default@file
-
       # --- Certificados (Let's Encrypt) ---
       - --certificatesresolvers.letsencrypt.acme.email=vitorianoernandes2012@gmail.com
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
@@ -44,7 +41,7 @@ services:
       - --accesslog.fields.headers.defaultmode=redact
 
       # --- General Log ---
-      - --log.level=WARN
+      - --log.level=DEBUG
       - --log.format=json
 
     ports:
@@ -110,6 +107,7 @@ services:
 configs:
   traefik-security:
     file: ./dynamic/security.yml
+    name: traefik-security-v2
 
 volumes:
   traefik-certs:
