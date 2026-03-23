@@ -1,7 +1,7 @@
 services:
   traefik:
     image: traefik:v3.3.7
-    hostname: traefik-{{.Task.Slot}}
+    hostname: traefik
     command:
       # --- API desabilitada ---
       - --api=false
