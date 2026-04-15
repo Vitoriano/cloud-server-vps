@@ -1,0 +1,49 @@
+# Swarm (global = uma tarefa por nó): docker stack deploy -c docker-compose.yml watchtower
+services:
+  watchtower:
+    image: containrrr/watchtower:1.7.1
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      # Registry privado: descomenta só se /root/.docker/config.json existir em CADA nó.
+      # - type: bind
+      #   source: /root/.docker/config.json
+      #   target: /config.json
+      #   read_only: true
+    environment:
+      WATCHTOWER_POLL_INTERVAL: "30"
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_LABEL_ENABLE: "true"
+    command: ["--include-restarting"]
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+        reservations:
+          cpus: "0.05"
+          memory: 64M
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "/watchtower", "help"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 10s

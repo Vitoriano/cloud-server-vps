@@ -1,6 +1,6 @@
 # Infra Docker Swarm
 
-Ambiente Docker Swarm com Traefik como reverse proxy e Portainer para gerenciamento do cluster.
+Ambiente Docker Swarm com Traefik como reverse proxy, Portainer para gerenciamento do cluster e Watchtower opcional para atualizar imagens dos contentores.
 
 ## Estrutura do Projeto
 
@@ -15,6 +15,8 @@ server/
 ├── portainer/
 │   ├── docker-compose.yml      # Stack do Portainer + Agent
 │   └── portainer.sh            # Script de deploy/gerenciamento da stack portainer
+├── watchtower/
+│   └── docker-compose.yml      # Atualização automática de imagens (deploy global: 1 por nó)
 └── README.md                   # Este guia (visão geral do ambiente)
 ```
 
@@ -25,6 +27,7 @@ server/
 - O banco do Portainer CE é interno (`/data/portainer.db`) e persiste no volume `portainer-data`.
 - A rede `network_public` é overlay externa compartilhada entre stacks expostas.
 - A rede `network_internal` do Portainer é overlay interna para comunicação com o agent.
+- `watchtower` em modo **global** (uma instância por nó, docker.sock local); monitoriza por label e não usa Traefik.
 
 ## Pré-requisitos
 
@@ -42,6 +45,10 @@ bash traefik.sh deploy
 # Portainer
 cd /root/server/portainer
 bash portainer.sh deploy
+
+# Watchtower (atualização de imagens; opcional)
+cd /root/server/watchtower
+docker stack deploy -c docker-compose.yml watchtower
 ```
 
 ## Como Lançar um Novo Serviço no Swarm

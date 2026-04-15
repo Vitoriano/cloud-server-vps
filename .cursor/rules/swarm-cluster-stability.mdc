@@ -1,0 +1,32 @@
+---
+description: Protege o cluster Swarm contra reinícios Docker, overlays quebradas e binds inválidos; lista ficheiros/padrões que o agente não deve alterar sem pedido explícito.
+alwaysApply: true
+---
+
+# Swarm cluster stability (guardrails)
+
+Estas regras evitam regressões que já ocorreram neste ambiente: **tasks Rejected** em `network_public`, **VXLAN órfã** após reinício do Docker, e **bind mounts** para ficheiros inexistentes.
+
+## Ficheiros e acções no host — NÃO alterar sem pedido explícito do utilizador
+
+- **`/etc/docker/daemon.json`** — Não criar, editar ou remover (incl. `min-api-version`) salvo o utilizador pedir explicitamente. Avisar que mudanças exigem `systemctl restart docker` e **podem deixar interfaces VXLAN inconsistentes**, partindo Portainer/Traefik e outras stacks em overlay até recuperação manual.
+- **`systemctl restart docker`** / reinício do daemon — Não sugerir como passo rotineiro em fixes. Se inevitável, incluir o playbook de recuperação abaixo.
+
+## Compose / stacks — NÃO introduzir sem validação
+
+- **Bind mounts** cujo `source` possa não existir **em todos os nós** (ex.: `/root/.docker/config.json`, paths com `~`) — causa **Rejected** no Swarm. Só adicionar se o utilizador confirmar que o path existe em cada nó, ou documentar como opcional comentado (como em `watchtower`).
+- **Remover ou renomear** redes overlay usadas por Traefik/Portainer (`network_public`, redes internas definidas nas stacks) — pode isolar serviços do proxy e do UI.
+- **`docker stack rm`** em stacks de infra (traefik, portainer, watchtower) — só com confirmação explícita do utilizador.
+
+## Se o Docker for reiniciado e as overlays falharem
+
+Sintoma típico: `network sandbox join failed` / `error creating vxlan interface: file exists` para subnet overlay (ex. `10.0.1.0/24`).
+
+1. `ip -d link show type vxlan` — identificar interface stale (ex. `vx-001001-*`).
+2. `sudo ip link delete <nome>` apenas na interface órfã em conflito.
+3. `sudo systemctl restart docker` se ainda necessário.
+4. Recriar tasks: `docker service update --force` nos serviços afectados (ex. `traefik_traefik`, `portainer_portainer`, `portainer_agent`, stacks em `network_public`).
+
+## Relação com outras regras
+
+- **`docker-swarm-traefik.mdc`** continua a mandar nos padrões de `docker-compose.yml`. Esta regra **sobrepõe-se** em matéria de **não tocar** em daemon do Docker e **não quebrar** overlays/bind mounts sem necessidade comprovada.
