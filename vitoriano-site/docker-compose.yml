@@ -2,6 +2,8 @@
 services:
   vitoriano-site:
     image: ghcr.io/vitoriano/vitoriano-site:latest
+    # Após SIGTERM no rolling update, o engine força SIGKILL passado este tempo (evita task antiga presa).
+    stop_grace_period: 20s
     environment:
       NODE_ENV: production
     networks:
@@ -41,6 +43,8 @@ services:
         delay: 10s
         failure_action: rollback
         order: start-first
+        # Janela pós-subida da task nova: se falhar aqui, o update falha/rollback em vez de ficar preso.
+        monitor: 60s
       rollback_config:
         parallelism: 1
         delay: 5s
@@ -59,10 +63,11 @@ services:
         max-file: "3"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ > /dev/null || exit 1"]
-      interval: 30s
+      # Intervalo mais curto: o Swarm só para a task antiga (start-first) quando a nova fica healthy.
+      interval: 15s
       timeout: 3s
       retries: 3
-      start_period: 5s
+      start_period: 10s
 
 networks:
   network_public:

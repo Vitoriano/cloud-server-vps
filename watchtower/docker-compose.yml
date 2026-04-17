@@ -1,4 +1,8 @@
 # Swarm (global = uma tarefa por nó): docker stack deploy -c docker-compose.yml watchtower
+#
+# Atenção: Watchtower não foi feito para serviços Swarm (tasks geridas pelo orchestrador).
+# Para stacks em Swarm, o caminho suportado é `docker service update --image …` (CI) ou
+# containrrr/shepherd, que dispara updates ao nível do serviço.
 services:
   watchtower:
     image: containrrr/watchtower:1.7.1
