@@ -4,6 +4,9 @@ services:
     image: ghcr.io/vitoriano/vitoriano-site:latest
     # Após SIGTERM no rolling update, o engine força SIGKILL passado este tempo (evita task antiga presa).
     stop_grace_period: 20s
+    # Labels do *contentor* (tasks). Watchtower filtra por isto; deploy.labels no Swarm ficam só no serviço.
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
     environment:
       NODE_ENV: production
     networks:
@@ -12,9 +15,6 @@ services:
       mode: replicated
       replicas: 1
       labels:
-        # Watchtower (WATCHTOWER_LABEL_ENABLE=true na stack watchtower)
-        - "com.centurylinklabs.watchtower.enable=true"
-
         - "traefik.enable=true"
         - "traefik.docker.network=network_public"
 

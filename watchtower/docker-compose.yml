@@ -3,6 +3,9 @@
 # Atenção: Watchtower não foi feito para serviços Swarm (tasks geridas pelo orchestrador).
 # Para stacks em Swarm, o caminho suportado é `docker service update --image …` (CI) ou
 # containrrr/shepherd, que dispara updates ao nível do serviço.
+#
+# Com WATCHTOWER_LABEL_ENABLE=true, o label com.centurylinklabs.watchtower.enable tem de existir
+# nas labels do *contentor* (no compose: chave `labels:` ao nível do serviço), não só em deploy.labels.
 services:
   watchtower:
     image: containrrr/watchtower:1.7.1
@@ -10,11 +13,11 @@ services:
       - type: bind
         source: /var/run/docker.sock
         target: /var/run/docker.sock
-      # Registry privado: descomenta só se /root/.docker/config.json existir em CADA nó.
-      # - type: bind
-      #   source: /root/.docker/config.json
-      #   target: /config.json
-      #   read_only: true
+      # GHCR/registry privado: o ficheiro tem de existir em CADA nó (deploy global).
+      - type: bind
+        source: /root/.docker/config.json
+        target: /config.json
+        read_only: true
     environment:
       WATCHTOWER_POLL_INTERVAL: "30"
       WATCHTOWER_CLEANUP: "true"

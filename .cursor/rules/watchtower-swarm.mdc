@@ -1,0 +1,27 @@
+---
+description: Watchtower no Swarm — labels no contentor e registry privado
+globs: "**/docker-compose.yml,**/docker-compose.*.yml"
+alwaysApply: false
+---
+
+# Watchtower + Docker Swarm
+
+A stack `watchtower` usa `WATCHTOWER_LABEL_ENABLE=true` (só monitoriza contentores explicitamente marcados).
+
+## Labels: posição correta no `docker-compose.yml`
+
+- O Watchtower filtra **contentores em execução** (tasks do Swarm), não o objeto *service* da API.
+- Em Swarm, **`deploy.labels`** aplicam-se ao **serviço** (ex.: Traefik lê-os no provider Swarm). **Não** são copiados automaticamente para as labels da **task/contentor**.
+- Para o Watchtower ver o serviço, a label **`com.centurylinklabs.watchtower.enable=true`** (ou `"true"`) tem de estar em **`labels:` ao nível do serviço** (mesmo nível que `image`, `networks`), ou seja, metadata do **contentor** / ContainerSpec.
+- Manter labels do Traefik em **`deploy.labels`**; duplicar só a label do Watchtower no bloco **`labels:`** de topo do serviço quando quiseres updates automáticos desse contentor.
+
+Sintoma se estiver errado: nos logs do Watchtower, `Scanned=0` em cada ciclo apesar do poll estar configurado.
+
+## Registry privado (ex.: GHCR)
+
+- Com imagem privada, o Watchtower precisa de credenciais (ex.: bind read-only de `/root/.docker/config.json` → `/config.json` na stack `watchtower`), e o ficheiro tem de existir **em cada nó** onde a task do Watchtower corre (deploy `global`).
+- Ver regra de estabilidade do cluster sobre bind mounts em todos os nós antes de adicionar ou alterar esse mount.
+
+## Nota de produto
+
+- Watchtower não é o fluxo ideal para Swarm; alternativas: `docker service update --image` (CI) ou Shepherd. A regra acima corrige o caso em que o Watchtower está ativo com label-enable.
